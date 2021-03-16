@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0">
+<title>Picker</title>
+<style>
+body {
+    background:#FFF;
+    color:#000;
+    font-family:verdana, sans-serif;
+    font-size:10pt;
+    margin:0;
+    padding:10px;
+}
+
+a:link, a:visited {
+    color:#008;
+    font-weight:bold;
+    text-decoration:none;
+}
+
+a:active, a:hover {
+    color:#ACF;
+}
+
+.info {
+    font-weight:bold;
+}
+
+button {
+    font-family:inherit;
+    cursor:pointer;
+    border:0;
+    border-radius:3px;
+    padding:0.3em 0.5em;
+    background:#CCC;
+    color:#000;
+}
+
+button:hover {
+    background:#DDD;
+}
+
+button.disabled {
+    background:#DDD;
+    color:#888;
+    cursor:not-allowed;
+}
+
+button.disabled:hover {
+    background:#DDD;
+}
+
+#container {
+    position:relative;
+    margin-left:-10px;
+    margin-right:-10px;
+    padding:10px;
+    overflow:hidden;
+}
+
+@media (min-width:1024px) {
+    /* Put the found favorites beside the picking div when the window is sufficiently large */
+    #picking {
+        float:left;
+        width:636px;
+    }
+
+    #secondary {
+        margin-left:646px;
+    }
+}
+
+@media (min-width:1300px) {
+    /* Once we get to the point where 636px is less than half of the width of the screen, make the picking div just take up half */
+    #picking {
+        width:50%;
+    }
+
+    #secondary {
+        margin-left:51%;
+    }
+}
+
+#pick {
+    background:#58F;
+    color:#FFF;
+    font-size:larger;
+    font-weight:bold;
+    width:6em;
+    border-radius:5px;
+    margin-right:10px;
+}
+
+#pick.disabled {
+    background:#ACF;
+}
+
+#pick:hover {
+    background:#ACF;
+}
+
+.item-list {
+    padding:0;
+    list-style-type:none;
+    line-height:100px;
+}
+
+.item-list li {
+    margin:0;
+    display:inline-block;
+    height:100px;
+    width:100px;
+    line-height:100px;
+    border:3px solid transparent;
+    text-align:center;
+    position:relative;
+    vertical-align:top;
+    overflow:hidden;
+    border-radius:100%;
+    background:#F7F7F7;
+    color:#000;
+}
+
+.item-list li img {
+    vertical-align:middle;
+    max-height:100%;
+    max-width:100%;
+}
+
+.item-list li span {
+    display:inline-block;
+    vertical-align:middle;
+    line-height:1.2;
+}
+
+@media (max-width:636px) {
+    .item-list {
+        line-height:75px;
+    }
+
+    .item-list li {
+        line-height:75px;
+        height:75px;
+        width:75px;
+    }
+}
+
+@media (max-width:423px) {
+    .item-list {
+        line-height:50px;
+    }
+
+    .item-list li {
+        line-height:50px;
+        height:50px;
+        width:50px;
+    }
+}
+
+#evaluating li {
+    cursor:pointer;
+}
+
+#favorites li {
+    cursor:move;
+}
+
+.item-list li:hover {
+    background:#CDF;
+}
+
+.item-list.sorting li:hover {
+    background:#F7F7F7;
+}
+
+#evaluating li.selected {
+    border:3px solid #7AC;
+}
+
+#evaluating, #buttons {
+    text-align:center;
+    margin:auto;
+}
+
+#evaluating li.notice {
+    width:auto;
+    height:auto;
+    max-width:260px;
+    margin:auto;
+    background:#F7F7F7;
+    border-radius:10px;
+    padding:30px 30px;
+    color:#000;
+    text-align:center;
+    line-height:1.4;
+    cursor:auto;
+    font-size:10pt;
+}
+
+#buttons {
+    margin-top:30px;
+    position:relative;
+    z-index:3;
+}
+</style>
+</head>
+<body>
+<h1>Dragalia Lost Favourite Character Picker</h1>
+
+<p>HOW TO USE: It's simple! In each group of characters shown, click on at least one (or more) of your favourites from that group, then hit Pick! 
+Hover over a character to see their name. 
+You can also pass if you can't decide, or Undo if you made a mistake. Your favourites will appear on the right side!</p>
+
+<p>Features all playable characters and story NPCs (including spoliers up to chapter 18). 
+I will try to update this as new characters are added. 
+If you notice any characters are missing or have any other suggestions, please let me know! (@Dragonite13#0149 on Discord or @Dragonite131 on Twitter!)<p>
+
+<p>Based off the Cave of Dragonfly's Favourite Pokemon Picker found here: https://www.dragonflycave.com/favorite.html . 
+Character images are WIP I'm making versions specifically for this and I'm lazy lol. <p>
+
+
+<div id="container">
+
+<div id="picking">
+<ul id="evaluating" class="item-list">
+</ul>
+
+<p id="buttons"><button id="pick">Pick</button> <button id="pass">Pass</button> <button id="undo">Undo</button> <button id="redo">Redo</button></p>
+</div>
+
+<div id="secondary">
+<h2>Found favorites</h2>
+
+<ol id="favorites" class="item-list">
+</ol>
+</div>
+</div>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="picker.js"></script>
+<script src="picker-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.7.0/Sortable.min.js"></script>
+<script>
+'use strict';
+
+var items = [
+    // Define your items here
+        {id:"Euden", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381676940001310/Euden.png"},
+        {id:"Elisanne", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381674151444540/Elisanne.png"},
+        {id:"Ranzal", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381726119002152/Ranzal.png"},
+        {id:"Cleo", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381670858129478/Cleo.png"},
+        {id:"Luca", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381684502069308/Luca.png"},
+
+        {id:"Zethia", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381736298446978/Zethia.png"},
+        {id:"Notte"},
+        {id:"Mym", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381915235319848/Mym.png"},
+        {id:"Sarisse", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381728853033010/Sarisse.png"},
+
+        {id:"Alex", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381668040474645/Alex.png"},
+        {id:"Laxi", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381679386066974/Laxi.png"},
+        {id:"Mascula", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381910755934238/Mascula.png"},
+        {id:"Zena", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381734016483368/Zena.png"},
+
+        {id:"Emile", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381675648024607/Emile.png"},
+        {id:"Valyx", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381731260825610/Valyx.png"},
+        {id:"Phares", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381722666958848/Phares.png"},
+        {id:"Chelle", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381668815765514/Chelle.png"},
+        {id:"Leonidas", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381682963284008/Leonidas.png"},
+        {id:"Leif", image:"https://cdn.discordapp.com/attachments/821381612284936223/821381681503797248/Leif.png"},
+
+        {id:"Beren", image:"https://cdn.discordapp.com/attachments/821381612284936223/821386744288378920/Beren.png"},
+        {id:"Harle", image:"https://cdn.discordapp.com/attachments/821381612284936223/821386761048555550/Harle.png"},
+
+        {id:"Nedrick", image:"https://cdn.discordapp.com/attachments/821381612284936223/821391254125543474/Nedrick.png"},
+        {id:"Volk", image:"https://cdn.discordapp.com/attachments/821381612284936223/821391217874960484/Volk.png"},
+        {id:"Ciella", image:"https://cdn.discordapp.com/attachments/821381612284936223/821391291375026267/Ciella.png"},
+        {id:"Ayaha & Otoha", image:"https://cdn.discordapp.com/attachments/821381612284936223/821392097760116786/AyahaOtoha.png"},
+        {id:"Kai Yan", image:"https://cdn.discordapp.com/attachments/821381612284936223/821391270445842432/KaiYan.png"},
+        {id:"Tartarus", image:"https://cdn.discordapp.com/attachments/821381612284936223/821391230814388244/Tartarus.png"},
+        
+        {id:"Gatov", image:"https://cdn.discordapp.com/attachments/821381612284936223/821405346152579123/Gatov.png"},
+        {id:"Sheila", image:"https://cdn.discordapp.com/attachments/821381612284936223/821405284726997042/Sheila.png"},
+        {id:"Origa", image:"https://cdn.discordapp.com/attachments/821381612284936223/821405342171922432/Origa.png"},
+        {id:"Graht", image:"https://cdn.discordapp.com/attachments/821381612284936223/821405344097370171/Graht.png"},
+
+        {id:"Ezelith", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420015546531870/Ezelith.png"},
+        {id:"Mikoto", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420024954224660/Mikoto.png"},
+        {id:"Karl", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420021695643698/Karl.png"},
+        {id:"Vanessa", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420032034209852/Vanessa.png"},
+        {id:"Verica", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420035628073030/Verica.png"},
+        {id:"Aoi", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420009334767626/Aoi.png"},
+        {id:"Renelle", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420028322250802/Renelle.png"},
+        {id:"Alain", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420006839156797/Alain.png"},
+        {id:"Joe", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420018704580688/Joe.png"},
+        {id:"Xania", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420049230200852/Xania.png"},
+        {id:"Aurien", image:"https://cdn.discordapp.com/attachments/821381612284936223/821420012358074378/Aurien.png"},
+
+        {id:"Xander", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423361690173510/Xander.png"},
+        {id:"Xainfried", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423360135135293/Xainfried.png"},
+        {id:"Luther", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423380170276864/Luther.png"},
+        {id:"Karina", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423375356133436/Karina.png"},
+        {id:"Thaniel", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423397367709736/Thaniel.png"},
+        {id:"Zardin", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423364487905310/Zardin.png"},
+        {id:"Jurota", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423371682185228/Jurota.png"},
+        {id:"Rex", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423382440574976/Rex.png"},
+        {id:"Cibella", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423367680294943/Cibella.png"},
+        {id:"Waike", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423355861139466/Waike.png"},
+        {id:"Ricardt", image:"https://cdn.discordapp.com/attachments/821381612284936223/821423385627852800/Ricardt.png"},
+
+        {id:"Hawk", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429165575897098/Hawk.png"},
+        {id:"Maribelle", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429173464596551/Maribelle.png"},
+        {id:"Musashi", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429186190508124/Musashi.png"},
+        {id:"Aeleen", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429153931853874/Aeleen.png"},
+        {id:"Eleonora", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429157648007168/Eleonora.png"},
+        {id:"Melody", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429176627757066/Melody.png"},
+        {id:"Francesca", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429161389326366/Francesca.png"},
+        {id:"Johanna", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429169874534410/Johanna.png"},
+        {id:"Philia", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429146987003914/Philia.png"},
+        {id:"Nicolas", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429143966318691/Nicolas.png"},
+        {id:"Sophie", image:"https://cdn.discordapp.com/attachments/821381612284936223/821429150203248691/Sophie.png"},
+
+        {id:"Julietta", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445684917960734/Julietta.png"},
+        {id:"Hildegarde", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445426229149708/Hildegarde.png"},
+        {id:"Ryozen", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445418365091850/Ryozen.png"},
+        {id:"Rawn", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445415231946762/Rawn.png"},
+        {id:"Amane", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445420692930610/Amane.png"},
+        {id:"Raemond", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445413214486558/Raemond.png"},
+        {id:"Irfan", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445431468097596/Irfan.png"},
+        {id:"Linus", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445452578684948/Linus.png"},
+        {id:"Malka", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445407585599508/Malka.png"},
+        {id:"Malora"}, image:"https://cdn.discordapp.com/attachments/821381612284936223/821445410400763954/Malora.png"},
+        {id:"Estelle", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445423628550174/Estelle.png"},
+        {id:"Hope", image:"https://cdn.discordapp.com/attachments/821381612284936223/821445428947320883/Hope.png"},
+
+        {id:"Nefaria", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448827823325204/Nefaria.png"},
+        {id:"Berserker", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448820201750588/Berserker.png"},
+        {id:"Orion", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448831686148156/Orion.png"},
+        {id:"Kleimann", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448826501726288/Kleimann.png"},
+        {id:"Rodrigo", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448802274770994/Rodrigo.png"},
+        {id:"Taro", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448805517361194/Taro.png"},
+        {id:"Vice", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448809179381762/Vice.png"},
+        {id:"Erik", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448822215147520/Erik.png"},
+        {id:"Althemia", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448812492750878/Althemia.png"},
+        {id:"Edward", image:"https://cdn.discordapp.com/attachments/821381612284936223/821448818662309928/Edward.png"},
+
+        {id:"Lily"},
+        {id:"Celliera"},
+        {id:"Orsem"},
+        {id:"Zace"},
+
+        {id:"Naveed"},
+        {id:"Melsa"},
+        {id:"Sinoa"},
+        {id:"Vida"},
+
+        {id:"Louise"},
+        {id:"Lowen"},
+        {id:"Pietro"},
+
+        {id:"Lucretia"},
+        {id:"Vixel"},
+        {id:"Elias"},
+        {id:"Pia"},
+
+        {id:"Ieyasu"},
+        {id:"Sazanka"},
+        {id:"Botan"},
+        {id:"Addis"},
+
+        {id:"Annelie"},
+        {id:"Fritz"},
+        {id:"Marty"},
+
+        {id:"Lin You"},
+        {id:"Ku Hai"},
+        {id:"Su Fang"},
+        {id:"Xiao Lei"},
+        
+        {id:"Albert"},
+        {id:"Odetta"},
+        {id:"Felicia"},
+        {id:"Jakob"},
+        
+        {id:"Curran"},
+        {id:"Heinwald"},
+        
+        {id:"Laranoa"},
+        {id:"Fleur"},
+        
+        {id:"Sylas"},
+        {id:"Yue"},
+        
+        {id:"Marth"},
+        {id:"Alfonse"},
+        {id:"Fjorm"},
+        {id:"Veronica"},
+        
+        {id:"Yachiyo"},
+        {id:"Norwin"},
+        
+        {id:"Serena"},
+        {id:"Xuan Zang"},
+        
+        {id:"Yaten"},
+        {id:"Natalie"},
+        
+        {id:"Rena"},
+        {id:"Ramona"},
+        {id:"Renee"},
+        
+        {id:"Victor"},
+        {id:"Noelle"},
+        
+        {id:"Lea"},
+        {id:"Emma"},
+        
+        {id:"Delphi"},
+        {id:"Cassandra"},
+        {id:"Audric"},
+        {id:"Patia"},
+        
+        {id:"Lathna"},
+        
+        {id:"Akasha"},
+        
+        {id:"Chelsea"},
+        {id:"Yuya"},
+        
+        {id:"Mega Man"},
+        
+        {id:"Jiang Ziya"},
+        {id:"Durant"},
+        
+        {id:"Mistuhide"},
+        {id:"Hanabusa"},
+        {id:"Chitose"},
+        
+        {id:"Kirsty"},
+        {id:"Joachim"},
+        
+        {id:"Valerio"},
+        {id:"Mitsuba"},
+        {id:"Pipple"},
+        
+        {id:"Tobias"},
+        
+        {id:"Aldred"},
+        
+        {id:"Bellina"},
+        
+        {id:"Grace"},
+        
+        {id:"Lazry"},
+        {id:"Gauld"},
+        
+        {id:"Chrom"},
+        {id:"Sharena"},
+        {id:"Peony"},
+        
+        {id:"Tiki"},
+        
+        {id:"Yurius"},
+        {id:"Forte"},
+        
+        {id:"Wu Kong"},
+        
+        {id:"Zhu Bajie"},
+        {id:"Sha Wujing"},
+        
+        {id:"Nadine"},
+        {id:"Linnea"},
+        
+        {id:"Eugene"},
+        {id:"Catherine"},
+        
+        {id:"Pinon"},
+        {id:"Nevin"},
+        
+        {id:"Ilia"},
+        {id:"Meene"},
+        {id:"Mordecai"},
+        
+        {id:"Lapis"},
+        
+        {id:"Pecorine"},
+        
+        {id:"Seimei"},
+        {id:"Kuzunoha"},
+        {id:"Yoshitzune"},
+        
+        {id:"Joker"},
+        {id:"Sophie (P5S)"},
+        {id:"Mona"},
+        {id:"Panther"},
+        
+        {id:"Faris"},
+        {id:"Ryszarda"},
+
+	    {id:"Eirene"},
+	    {id:"Finni"},
+
+];
+
+var myPicker = new picker.Picker({
+    items: items
+});
+
+var pickerUI = new PickerUI(myPicker, {
+    elements: {
+        pick: "#pick",
+        pass: "#pass",
+        undo: "#undo",
+        redo: "#redo",
+        evaluating: "#evaluating",
+        favorites: "#favorites"
+    }
+});
+
+pickerUI.initialize();
+
+/* Sortable favorites - you can safely remove this, and the Sortable.min.js script, if you don't want to be able to sort your favorite list. */
+var sortable = new Sortable(pickerUI.elem.favorites.get(0), {
+    draggable: '.item',
+    animation: 100,
+    onStart: function() {
+        pickerUI.elem.favorites.addClass("sorting");
+    },
+    onEnd: function() {
+        pickerUI.elem.favorites.removeClass("sorting");
+    },
+    onUpdate: function() {
+        myPicker.setFavorites(pickerUI.elem.favorites.children().map(function() {
+            return pickerUI.getItem(this);
+        }).get());
+        pickerUI.update(true);
+    }
+});
+/* End sortable favorites */
+</script>
+</body>
+</html>
