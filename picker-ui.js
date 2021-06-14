@@ -481,7 +481,7 @@
 
     PickerUI.prototype.makeResetButton = function(text) {
         /**
-         * Creates and returns a reset button.
+         * Creates and returns a reset button. (haha update)
          */
         var self = this;
         return $('<button type="button">' + (text || this.messages.reset) + '</button>').on('click', function() {

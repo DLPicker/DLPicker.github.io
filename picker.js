@@ -922,7 +922,7 @@
 
     function parseQueryString(qs) {
         /**
-         * Parses a query string (a=b&c=d) into an object.
+         * Parses a query string (a=b&c=d) into an object. (haha update)
          */
         var query = {};
         var split = qs.split('&');
