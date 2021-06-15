@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="initial-scale=1.0">
-<title>Dragalia Character Picker</title>
+<title>Dragalia Favourite Character Picker</title>
 <style>
 body {
     background:#FFF;
@@ -522,7 +522,8 @@ var items = [
 
 
 var myPicker = new picker.Picker({
-    items: items
+    items: items,
+    localStoragekey: "dl-picker-state"
 });
 
 var pickerUI = new PickerUI(myPicker, {
